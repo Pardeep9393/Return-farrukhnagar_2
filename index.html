@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  *{box-sizing:border-box}
+  body{font-family:Arial,sans-serif;margin:0;background:#f4f6f8;color:#222}
+  header{background:#1a3c6e;color:#fff;padding:14px 20px;font-size:18px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .tabs{display:flex;gap:6px}
+  .tabs button{padding:7px 16px;border:0;border-radius:6px;cursor:pointer;font-size:13px;background:#ffffff33;color:#fff}
+  .tabs button.active{background:#fff;color:#1a3c6e;font-weight:bold}
+  .wrap{max-width:900px;margin:16px auto;padding:0 12px}
+  .wrap.wide{max-width:1100px}
+  .card{background:#fff;border-radius:8px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px #0002}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:180px}
+  label{font-size:12px;color:#555;display:block;margin-bottom:4px}
+  select,input{width:100%;padding:9px;border:1px solid #bbb;border-radius:6px;font-size:14px}
+  button{padding:10px 16px;border:0;border-radius:6px;color:#fff;font-size:14px;cursor:pointer}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .b1{background:#1a73e8}.b2{background:#d93025}.b3{background:#188038}.g{background:#5f6368}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left}
+  th{background:#f1f3f4}
+  .cnt{font-size:22px;font-weight:bold;color:#1a3c6e}
+  #msg{padding:8px 12px;border-radius:6px;margin-bottom:10px;display:none;font-size:13px}
+  .ok{background:#e6f4ea;color:#137333}.er{background:#fce8e6;color:#c5221f}
+  a{color:#1a73e8}
+  #vLogin{max-width:340px;margin:60px auto}
+  #vLogin .card>*{margin-bottom:10px}
+  .kpis{display:flex;gap:10px;flex-wrap:wrap}.kpi{flex:1;min-width:120px;text-align:center}
+  .kpi span{display:block;font-size:24px;font-weight:bold;color:#1a3c6e}
+  .tw{overflow-x:auto}
+  #vModal{display:none;position:fixed;inset:0;background:#0007;padding:20px;overflow:auto;z-index:50}
+  #vModal .card{max-width:800px;margin:0 auto}
+</style>
+</head>
+<body>
+<header>
+  <span>Return Received Dashboard <span style="font-size:11px;font-weight:normal;opacity:.7">v12-ddmmyyyy</span></span>
+  <div class="tabs">
+    <button id="tabAdminBtn" class="active" onclick="showTab('admin')">Admin</button>
+    <button id="tabViewerBtn" onclick="showTab('viewer')">Viewer</button>
+  </div>
+</header>
+
+<!-- ===================== ADMIN VIEW ===================== -->
+<div id="tabAdmin" class="wrap">
+  <div id="msg"></div>
+
+  <div class="card">
+    <div class="row">
+      <div><label>Scanner Name</label><select id="scanner"></select></div>
+      <div><label>Client Name</label><select id="client"></select></div>
+      <div><label>Courier Name</label><select id="courier"></select></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Scan AWB (barcode scanner — auto add on Enter)</label>
+    <input id="awb" placeholder="Scan here..." autocomplete="off">
+    <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>Current session count: <span class="cnt" id="cnt">0</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="b1" id="bStart" onclick="startNew()">Start New Session</button>
+        <button class="b2" id="bClose" onclick="closeAll()">Close All Session</button>
+        <button class="b3" id="bPdf" onclick="savePdf()">Save PDF</button>
+      </div>
+    </div>
+    <table style="margin-top:12px"><thead><tr><th>#</th><th>AWB</th><th>Box Condition</th><th></th></tr></thead><tbody id="scanRows"></tbody></table>
+  </div>
+
+  <div class="card">
+    <b>Sessions</b>
+    <table style="margin-top:8px"><thead><tr><th>Client</th><th>Courier</th><th>Count</th><th>Status</th><th>PDF</th><th>Excel</th></tr></thead><tbody id="sessRows"></tbody></table>
+  </div>
+</div>
+
+<div id="cModal" style="display:none;position:fixed;inset:0;background:#0007;align-items:center;justify-content:center;z-index:60">
+  <div class="card" style="max-width:340px;text-align:center">
+    <p id="cmMsg" style="margin:0 0 14px;font-size:14px"></p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="b1" onclick="cmYes()">Yes</button>
+      <button class="g" onclick="cmNo()">No</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== VIEWER VIEW ===================== -->
+<div id="tabViewer" style="display:none">
+  <div id="vLogin">
+    <div class="card">
+      <h3 style="margin:0 0 4px">Return Received - Viewer</h3>
+      <div><label>Email</label><input id="vEm" type="email" placeholder="you@company.com"></div>
+      <div><label>Password</label><input id="vPw" type="password" onkeydown="if(event.key==='Enter')vLoginFn()"></div>
+      <button onclick="vLoginFn()" style="width:100%">Login</button>
+      <div style="color:#c5221f;font-size:13px;min-height:16px" id="vLerr"></div>
+    </div>
+  </div>
+
+  <div id="vApp" style="display:none">
+    <div class="wrap wide">
+      <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:12px" id="vWho"></span><button class="g" onclick="vLogout()">Logout</button>
+      </div>
+      <div class="card"><div class="row">
+        <div><label>From Date</label><input type="date" id="vFd"></div>
+        <div><label>To Date</label><input type="date" id="vTd"></div>
+        <div style="position:relative"><label>Client (multi-select)</label>
+          <button class="g" type="button" style="width:100%;text-align:left;background:#fff;color:#222;border:1px solid #bbb" onclick="vToggleClientBox()" id="vFcBtn">All clients</button>
+          <div id="vFcBox" style="display:none;position:absolute;z-index:10;background:#fff;border:1px solid #bbb;border-radius:6px;max-height:220px;overflow:auto;min-width:220px;padding:6px;box-shadow:0 2px 8px #0003"></div>
+        </div>
+        <div><label>Courier</label><select id="vFk"></select></div>
+        <div style="flex:0 0 auto;align-self:flex-end;display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="vRender()">Filter</button><button class="g" onclick="vClearF()">Clear</button><button class="g" onclick="vLoad()">Refresh</button>
+          <button onclick="vDownloadCsv()">Download (Client-wise)</button>
+        </div>
+      </div></div>
+      <div class="card kpis">
+        <div class="kpi"><span id="vK1">0</span>Total Returns</div>
+        <div class="kpi"><span id="vK2">0</span>Manifests</div>
+        <div class="kpi"><span id="vK3">0</span>Clients</div>
+      </div>
+      <div class="card tw"><table><thead><tr><th>Date</th><th>Client</th><th>Courier</th><th>Count</th><th>PDF</th><th>Excel</th><th>Mail</th><th>AWBs</th></tr></thead><tbody id="vRows"></tbody></table></div>
+      <div style="color:#c5221f;font-size:13px;min-height:16px" id="vAerr"></div>
+    </div>
+  </div>
+
+  <div id="vModal" onclick="if(event.target===this)this.style.display='none'">
+    <div class="card"><div style="display:flex;justify-content:space-between"><b id="vMt"></b><button class="g" onclick="$('vModal').style.display='none'">Close</button></div>
+      <div class="tw" style="margin-top:10px"><table><thead><tr><th>#</th><th>Scan Date</th><th>AWB</th><th>Courier</th><th>Scanner</th><th>Manifest</th></tr></thead><tbody id="vMrows"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const API = 'https://script.google.com/macros/s/PASTE_NEW_DEPLOYMENT_ID_HERE/exec';
+function api(action, payload){
+  return fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({action}, payload))})
+    .then(r=>r.json()).then(j=>{ if(j && j.error) throw new Error(j.error); return j; });
+}
+function showTab(t){
+  const isA = t==='admin';
+  $('tabAdmin').style.display = isA?'block':'none';
+  $('tabViewer').style.display = isA?'none':'block';
+  $('tabAdminBtn').classList.toggle('active', isA);
+  $('tabViewerBtn').classList.toggle('active', !isA);
+}
+
+/* ======================= ADMIN LOGIC ======================= */
+let sessions = [];      // completed sessions (client, courier, awbs, links)
+let cur = [];           // {awb, box}
+const BOX_OPTS=['Damage Box & Open','Froud','QC Failed'];
+let closed = false;
+let pdfSaved = true;   // false right after Close, until Save PDF succeeds — blocks Start New Session
+let busy = false;      // in-flight lock — double Close/Save rokne ke liye
+// Scanner ka Enter focused button ko dobara click na kare (duplicate save ka main reason)
+document.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.tagName==='BUTTON') e.preventDefault(); }, true);
+
+function showConfirm(text, onYes){ $('cmMsg').textContent = text; $('cModal').style.display='flex'; window._cmYes = onYes; }
+function cmNo(){ $('cModal').style.display='none'; window._cmYes=null; }
+function cmYes(){ $('cModal').style.display='none'; const f=window._cmYes; window._cmYes=null; if(f) f(); }
+
+function fill(id, arr){ $(id).innerHTML = '<option value="">-- Select --</option>' + arr.map(x=>`<option>${x}</option>`).join(''); }
+function msg(t, ok){ const m=$('msg'); m.textContent=t; m.className=ok?'ok':'er'; m.style.display='block'; setTimeout(()=>m.style.display='none',5000); }
+
+const SS_ID = '1up44aOt8q0U2DfBc3mFJFhVCG8xE5eU9W_l-qHZc-CY';
+['scanner','client','courier'].forEach(id=>$(id).innerHTML='<option>Loading...</option>');
+setTimeout(()=>{ if($('client').options.length<=1 && $('client').value==='Loading...') showLoadErr('Data abhi tak load nahi hua — F12 > Console ka error bhejo'); }, 8000);
+const HEADS = ['client','courier','scaner name','scanner name','scanner'];
+function showLoadErr(t){ const m=$('msg'); m.textContent=t; m.className='er'; m.style.display='block'; }
+function applyMasters(d){
+  const f = a => [...new Set((a||[]).map(x=>String(x||'').trim()).filter(x=>x && !HEADS.includes(x.toLowerCase())))];
+  fill('scanner',f(d.scanners)); fill('client',f(d.clients)); fill('courier',f(d.couriers));
+}
+function loadViaGviz(){
+  fetch('https://docs.google.com/spreadsheets/d/'+SS_ID+'/gviz/tq?tqx=out:json&sheet=Clinet%20NAme&headers=0')
+    .then(r=>r.text()).then(t=>{
+      const j = JSON.parse(t.substring(t.indexOf('{'), t.lastIndexOf('}')+1));
+      const col = i => j.table.rows.map(r=>r.c && r.c[i] ? r.c[i].v : '');
+      applyMasters({clients:col(0), couriers:col(3), scanners:col(5)});
+    }).catch(e=>showLoadErr('Dropdown load error: '+e.message+' (sheet ko "Anyone with the link - Viewer" karo)'));
+}
+loadViaGviz();
+
+$('awb').addEventListener('keydown', e=>{
+  if(e.key!=='Enter') return;
+  const v = e.target.value.trim(); e.target.value='';
+  if(!v) return;
+  if(!$('scanner').value||!$('client').value||!$('courier').value) return msg('Pehle Scanner, Client aur Courier select karo');
+  if(closed) return msg('Session closed hai — Start New Session karo');
+  if(cur.some(x=>String(x.awb).toUpperCase()===v.toUpperCase())) return msg('Duplicate AWB: '+v);
+  cur.push({awb:v, box:''}); renderCur();
+});
+
+function renderCur(){
+  $('cnt').textContent = cur.length;
+  $('scanRows').innerHTML = cur.map((it,i)=>`<tr><td>${i+1}</td><td>${it.awb}</td><td>
+    <select onchange="setBox(${i},this.value)">
+      <option value="" ${it.box===''?'selected':''}></option>
+      ${BOX_OPTS.map(o=>`<option ${it.box===o?'selected':''}>${o}</option>`).join('')}
+    </select></td><td><a href="#" onclick="del(${i});return false">remove</a></td></tr>`).reverse().join('');
+}
+function setBox(i,v){ cur[i].box=v; }
+function del(i){ cur.splice(i,1); renderCur(); }
+
+function pushCur(){
+  if(!cur.length) return;
+  const c=$('client').value, k=$('courier').value, ab=x=>x.replace(/[^A-Za-z0-9]/g,'').substring(0,3).toUpperCase(), d=new Date(), p=n=>String(n).padStart(2,'0');
+  sessions.push({client:c, courier:k, awbs:cur.slice(), status:'Open', manifest:'RET-'+ab(c)+'-'+ab(k)+'-'+p(d.getDate())+p(d.getMonth()+1)+String(d.getFullYear()).slice(2)+'-'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())});
+  cur=[]; renderCur();
+}
+function startNew(){
+  if(closed){
+    if(!pdfSaved) return msg('Pehle Save PDF karo — tabhi naya session start hoga');
+    sessions=[]; closed=false; $('bPdf').disabled=false; $('bClose').disabled=false; $('bStart').disabled=false;
+  } else pushCur();
+  $('client').value=''; $('courier').value=''; renderSess(); $('client').focus();
+}
+function closeAll(){
+  if(busy) return;
+  if(closed) return msg('Sessions already close hain — ab Save PDF karo');
+  if(!$('scanner').value) return msg('Scanner select karo');
+  pushCur();
+  if(!sessions.length) return msg('Koi scan nahi hai');
+  showConfirm('Sab sessions close karne hain? Data client ki tab me save ho jayega.', doCloseAll);
+}
+function doCloseAll(){
+  if(busy) return; busy=true;
+  $('bClose').disabled=true; $('bPdf').disabled=true;
+  api('closeAllSessions', {sessions:sessions.map(({client,courier,awbs,manifest})=>({client,courier,awbs,manifest})), scanner:$('scanner').value})
+    .then(()=>{
+      sessions.forEach(s=>s.status='Closed'); closed=true; pdfSaved=false; busy=false;
+      $('bPdf').disabled=false; $('bStart').disabled=true; renderSess();
+      msg('Sessions close ho gaye — Save PDF karna zaroori hai naye session ke liye',true);
+    }).catch(e=>{ busy=false; $('bClose').disabled=false; $('bPdf').disabled=false; showLoadErr('Close All Session error: '+e.message); });
+}
+function savePdf(){
+  if(busy) return;
+  if(closed && pdfSaved) return msg('PDF already save ho chuka hai — Start New Session karo');
+  if(!$('scanner').value) return msg('Scanner select karo');
+  pushCur();
+  if(!sessions.length) return msg('Koi scan nahi hai');
+  showConfirm('PDF + Excel save karna hai? Links Summary sheet me add honge.', doSavePdf);
+}
+function doSavePdf(){
+  if(busy) return; busy=true;
+  $('bPdf').disabled=true; $('bClose').disabled=true; $('bStart').disabled=true; msg('Save ho raha hai, PDF/Excel ban rahe hain...',true);
+  const list = sessions.map(({client,courier,awbs,manifest})=>({client,courier,awbs,manifest})), sc=$('scanner').value;
+  const pre = closed ? Promise.resolve() : api('closeAllSessions', {sessions:list, scanner:sc});
+  pre.then(()=>{ closed=true; sessions.forEach(s=>s.status='Closed'); renderSess(); return api('savePdf', {sessions:list, scanner:sc}); })
+    .then(r=>{
+      r.forEach((x,i)=>{ sessions[i].pdf=x.pdf; sessions[i].xlsx=x.xlsx; sessions[i].status='PDF Saved'; });
+      pdfSaved=true; busy=false; $('bStart').disabled=false;
+      renderSess(); msg('PDF + Excel save ho gaye, links sheet me add ho gaye',true);
+    }).catch(e=>{ busy=false; $('bPdf').disabled=false; $('bClose').disabled=!!closed; showLoadErr('Save PDF error: '+e.message); });
+}
+function renderSess(){
+  $('sessRows').innerHTML = sessions.map(s=>`<tr><td>${s.client}</td><td>${s.courier}</td><td>${s.awbs.length}</td><td>${s.status}</td>
+    <td>${s.pdf?`<a href="${s.pdf}" target="_blank">PDF</a>`:'-'}</td><td>${s.xlsx?`<a href="${s.xlsx}" target="_blank">Excel</a>`:'-'}</td></tr>`).join('');
+}
+
+/* ======================= VIEWER LOGIC ======================= */
+const vEsc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let VLOG=[], VAUTH=null, VSELC=new Set();
+const VMON={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function vapi(action,extra){ return api(action, Object.assign({}, VAUTH, extra)); }
+function vpd(s){
+  s=String(s).trim();
+  let m=s.match(/^(\d{1,2})-(\w{3})/i);
+  if(m){ const y=s.match(/(\d{4})/); if(y) return new Date(+y[1], VMON[m[2].toLowerCase()], +m[1]); }
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m) return new Date(+m[3], +m[2]-1, +m[1]); // dd/mm/yyyy
+  return null;
+}
+
+function vLoginFn(){
+  VAUTH={email:$('vEm').value.trim(),password:$('vPw').value};
+  $('vLerr').textContent='Checking...';
+  vapi('viewerData').then(d=>{
+    sessionStorage.setItem('rv_auth',JSON.stringify(VAUTH));
+    vStart(d);
+  }).catch(e=>{VAUTH=null;$('vLerr').textContent=e.message;});
+}
+function vStart(d){
+  VLOG=d.log; $('vLogin').style.display='none'; $('vApp').style.display='block'; $('vWho').textContent=VAUTH.email;
+  const u=k=>[...new Set(VLOG.map(r=>r[k]))].sort();
+  const clients=u('client');
+  VSELC=new Set(clients);
+  $('vFcBox').innerHTML='<label style="display:block;padding:3px 4px;font-weight:bold;border-bottom:1px solid #eee;margin-bottom:4px"><input type="checkbox" id="vFcAll" checked onchange="vToggleAllClients(this.checked)"> All</label>'+
+    clients.map(c=>`<label style="display:block;padding:3px 4px"><input type="checkbox" class="vFcItem" value="${vEsc(c)}" checked onchange="vClientBoxChanged()"> ${vEsc(c)}</label>`).join('');
+  $('vFk').innerHTML='<option value="">All</option>'+u('courier').map(x=>`<option>${vEsc(x)}</option>`).join('');
+  vUpdateClientBtnLabel();
+  vRender();
+}
+function vLoad(){ $('vAerr').textContent='Loading...'; vapi('viewerData').then(d=>{const f=[$('vFd').value,$('vTd').value,$('vFk').value];vStart(d);$('vFd').value=f[0];$('vTd').value=f[1];$('vFk').value=f[2];vRender();$('vAerr').textContent='';}).catch(e=>$('vAerr').textContent=e.message); }
+function vLogout(){sessionStorage.removeItem('rv_auth');VAUTH=null;$('vApp').style.display='none';$('vLogin').style.display='block';$('vEm').value='';$('vPw').value='';}
+function vClearF(){
+  ['vFd','vTd','vFk'].forEach(i=>$(i).value='');
+  document.querySelectorAll('.vFcItem').forEach(c=>c.checked=true); if($('vFcAll'))$('vFcAll').checked=true;
+  vClientBoxChanged(); vRender();
+}
+function vToggleClientBox(){ const b=$('vFcBox'); b.style.display = b.style.display==='none' ? 'block' : 'none'; }
+document.addEventListener('click', e=>{ if($('vFcBox') && $('vFcBox').style.display==='block' && !e.target.closest('#vFcBox') && e.target.id!=='vFcBtn') $('vFcBox').style.display='none'; });
+function vToggleAllClients(checked){ document.querySelectorAll('.vFcItem').forEach(c=>c.checked=checked); vClientBoxChanged(); }
+function vClientBoxChanged(){
+  const items=[...document.querySelectorAll('.vFcItem')]; VSELC=new Set(items.filter(c=>c.checked).map(c=>c.value));
+  if($('vFcAll')) $('vFcAll').checked = VSELC.size===items.length;
+  vUpdateClientBtnLabel(); vRender();
+}
+function vUpdateClientBtnLabel(){
+  const items=[...document.querySelectorAll('.vFcItem')];
+  $('vFcBtn').textContent = VSELC.size===0 ? 'No client selected' : (VSELC.size===items.length ? 'All clients' : (VSELC.size<=2 ? [...VSELC].join(', ') : VSELC.size+' clients selected'));
+}
+function vRender(){
+  const f=$('vFd').value?new Date($('vFd').value+'T00:00'):null, t=$('vTd').value?new Date($('vTd').value+'T00:00'):null, k=$('vFk').value;
+  const rows=VLOG.map((r,i)=>Object.assign({i,d:vpd(r.date)},r)).filter(r=>(!f||(r.d&&r.d>=f))&&(!t||(r.d&&r.d<=t))&&VSELC.has(r.client)&&(!k||r.courier===k))
+    .sort((a,b)=>(b.d||0)-(a.d||0)||b.i-a.i);
+  window._vFiltered = rows;
+  $('vK1').textContent=rows.reduce((n,r)=>n+(+r.count||0),0); $('vK2').textContent=rows.length; $('vK3').textContent=new Set(rows.map(r=>r.client)).size;
+  $('vRows').innerHTML=rows.map(r=>`<tr><td>${vEsc(r.date)}</td><td>${vEsc(r.client)}</td><td>${vEsc(r.courier)}</td><td>${vEsc(r.count)}</td>
+    <td>${r.pdf?`<a href="${vEsc(r.pdf)}" target="_blank" rel="noopener">PDF</a>`:'-'}</td><td>${r.xlsx?`<a href="${vEsc(r.xlsx)}" target="_blank" rel="noopener">Excel</a>`:'-'}</td>
+    <td>${vEsc(r.mail)||'-'}</td><td><a href="#" onclick="vScans(${r.i});return false">View</a></td></tr>`).join('')||'<tr><td colspan="8">No data</td></tr>';
+}
+function vDownloadCsv(){
+  const rows = window._vFiltered || [];
+  if(!rows.length){ $('vAerr').textContent='Koi data nahi hai (filter check karo)'; return; }
+  const clients=[...new Set(rows.map(r=>r.client))];
+  const f=$('vFd').value?new Date($('vFd').value+'T00:00'):null, t=$('vTd').value?new Date($('vTd').value+'T00:00'):null, k=$('vFk').value;
+  $('vAerr').textContent='AWB data fetch ho raha hai...';
+  vapi('viewerAllScans',{clients}).then(d=>{
+    const esc2=v=>{ v=String(v==null?'':v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; };
+    const scans=d.scans.filter(s=>{ const sd=vpd(s.date); return (!f||(sd&&sd>=f))&&(!t||(sd&&sd<=t))&&(!k||s.courier===k); });
+    if(!scans.length){ $('vAerr').textContent='Selected filter ke liye AWB data nahi mila'; return; }
+    const byClient={}; scans.forEach(s=>{ (byClient[s.client]=byClient[s.client]||[]).push(s); });
+    const head=['Client','Scan Date','AWB','Courier','Scanner','Box Condition','Manifest'];
+    const lines=[head.join(',')];
+    Object.keys(byClient).sort().forEach(c=>{
+      byClient[c].forEach(s=>lines.push([c,s.date,s.awb,s.courier,s.scanner,s.boxCondition,s.manifest].map(esc2).join(',')));
+    });
+    const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='Return_AWB_ClientWise_'+new Date().toISOString().slice(0,10)+'.csv';
+    document.body.appendChild(a); a.click(); a.remove(); $('vAerr').textContent='';
+  }).catch(e=>$('vAerr').textContent=e.message);
+}
+function vScans(i){
+  const r=VLOG[i], d=vpd(r.date); $('vMt').textContent=`${r.client} | ${r.courier} | ${r.date}`; $('vMrows').innerHTML='<tr><td colspan="6">Loading...</td></tr>'; $('vModal').style.display='block';
+  vapi('viewerScans',{client:r.client}).then(x=>{
+    const sameDay=(a,b)=>a&&b&&a.getTime()===b.getTime();
+    const list=x.scans.filter(s=>sameDay(vpd(String(s.date).split(',')[0].trim()),d)&&s.courier===r.courier);
+    $('vMrows').innerHTML=list.map((s,n)=>`<tr><td>${n+1}</td><td>${vEsc(s.date)}</td><td>${vEsc(s.awb)}</td><td>${vEsc(s.courier)}</td><td>${vEsc(s.scanner)}</td><td>${vEsc(s.manifest)}</td></tr>`).join('')||'<tr><td colspan="6">AWB data nahi mila</td></tr>';
+  }).catch(e=>$('vMrows').innerHTML=`<tr><td colspan="6">${vEsc(e.message)}</td></tr>`);
+}
+// auto login within same browser tab session
+try{const a=JSON.parse(sessionStorage.getItem('rv_auth')||'null'); if(a){VAUTH=a; vapi('viewerData').then(vStart).catch(()=>{VAUTH=null;});}}catch(e){}
+</script>
+</body>
+</html>
