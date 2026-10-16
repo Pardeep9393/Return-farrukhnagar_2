@@ -137,7 +137,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
-const API = 'https://script.google.com/macros/s/PASTE_NEW_DEPLOYMENT_ID_HERE/exec';
+const API = 'https://script.google.com/macros/s/AKfycbybg8QG0ofoh8dUsry6JWUFugTDaAvJyXGFcN_YC0AfC3lebtfaD5PhiNg_H7Q0nSrK/exec';
 function api(action, payload){
   return fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({action}, payload))})
     .then(r=>r.json()).then(j=>{ if(j && j.error) throw new Error(j.error); return j; });
